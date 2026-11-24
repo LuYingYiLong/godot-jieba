@@ -22,6 +22,8 @@ env.Append(CPPPATH=[
 # 启用 C++ 异常处理。
 if env["platform"] == "windows":
     env.Append(CXXFLAGS=["/EHsc"])
+elif env["platform"] == "web":
+    env.Append(CXXFLAGS=["-fwasm-exceptions"], LINKFLAGS=["-fwasm-exceptions"])
 else:
     env.Append(CXXFLAGS=["-fexceptions"], LINKFLAGS=["-fexceptions"])
 
