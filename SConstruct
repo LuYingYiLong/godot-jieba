@@ -22,8 +22,8 @@ env.Append(CPPPATH=[
 # 启用 C++ 异常处理。
 if env["platform"] == "windows":
     env.Append(CXXFLAGS=["/EHsc"])
-elif env["platform"] == "android":
-    env.Append(CXXFLAGS=["-fexceptions"])
+else:
+    env.Append(CXXFLAGS=["-fexceptions"], LINKFLAGS=["-fexceptions"])
 
 # Collect C++ sources
 sources = Glob("src/*.cpp")
