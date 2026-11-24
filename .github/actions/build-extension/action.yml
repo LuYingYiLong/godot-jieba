@@ -31,4 +31,4 @@ runs:
         BUILD_TARGET: ${{ inputs.target }}
       run: |
         set -euo pipefail
-        scons platform="$BUILD_PLATFORM" arch="$BUILD_ARCH" target="$BUILD_TARGET" precision=single
+        scons platform="$BUILD_PLATFORM" arch="$BUILD_ARCH" target="$BUILD_TARGET" precision=single disable_exceptions=no
