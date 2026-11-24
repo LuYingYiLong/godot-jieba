@@ -318,17 +318,17 @@ namespace godot {
 		bool use_hmm = use_hmm_check == nullptr || use_hmm_check->is_pressed();
 
 		switch (selected_id) {
-			case CUT_MODE_MP:
-				return segment->cut(p_text, false);
-			case CUT_MODE_HMM:
-				return segment->cut_hmm(p_text);
-			case CUT_MODE_FULL:
-				return segment->cut_all(p_text);
-			case CUT_MODE_QUERY:
-				return segment->cut_for_search(p_text, use_hmm);
-			case CUT_MODE_MIX:
-			default:
-				return segment->cut(p_text, use_hmm);
+		case CUT_MODE_MP:
+			return segment->cut(p_text, false);
+		case CUT_MODE_HMM:
+			return segment->cut_hmm(p_text);
+		case CUT_MODE_FULL:
+			return segment->cut_all(p_text);
+		case CUT_MODE_QUERY:
+			return segment->cut_for_search(p_text, use_hmm);
+		case CUT_MODE_MIX:
+		default:
+			return segment->cut(p_text, use_hmm);
 		}
 	}
 
@@ -435,5 +435,4 @@ namespace godot {
 		set_output(output);
 		set_status("Keyword preview updated.");
 	}
-
 } // namespace godot

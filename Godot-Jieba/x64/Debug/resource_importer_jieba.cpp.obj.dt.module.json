@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "Godot-Jieba\\x64\\Debug\\resource_importer_jieba.obj",
+            "outputs": [
+                "Godot-Jieba\\x64\\Debug\\resource_importer_jieba.cpp.obj.dt.module.json",
+                "Godot-Jieba\\x64\\Debug\\resource_importer_jieba.cpp.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}

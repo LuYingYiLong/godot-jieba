@@ -1,0 +1,181 @@
+name: Build Godot-Jieba Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag to release, for example v1.0.1.
+        required: true
+        type: string
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Validate release tag
+    runs-on: ubuntu-22.04
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      asset: ${{ steps.meta.outputs.asset }}
+    steps:
+      - name: Resolve release metadata
+        id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            tag="$(printf '%s' "$INPUT_TAG" | tr -d '[:space:]')"
+          else
+            tag="$REF_NAME"
+          fi
+          if [ -z "$tag" ] || ! printf '%s' "$tag" | grep -Eq '^v[0-9A-Za-z._-]+$'; then
+            echo "::error::Release tags must start with 'v' and use only letters, digits, '.', '_' or '-'."
+            exit 1
+          fi
+          asset="godot-jieba-$tag.zip"
+          {
+            echo "tag=$tag"
+            echo "asset=$asset"
+          } >> "$GITHUB_OUTPUT"
+          echo "tag=$tag asset=$asset"
+
+      - name: Reject an existing manual tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists. Choose another tag or push the existing one."
+            exit 1
+          fi
+
+  build:
+    name: ${{ matrix.target.platform }} / ${{ matrix.target.arch }} / ${{ matrix.target-type }}
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          [
+            { platform: linux, arch: x86_64, os: ubuntu-22.04 },
+            { platform: linux, arch: arm64, os: ubuntu-22.04-arm },
+            { platform: windows, arch: x86_64, os: windows-latest },
+            { platform: windows, arch: x86_32, os: windows-latest },
+            { platform: macos, arch: universal, os: macos-latest },
+            { platform: macos, arch: arm64, os: macos-latest },
+            { platform: ios, arch: arm64, os: macos-latest },
+            { platform: android, arch: x86_64, os: ubuntu-22.04 },
+            { platform: android, arch: x86_32, os: ubuntu-22.04 },
+            { platform: android, arch: arm64, os: ubuntu-22.04 },
+            { platform: android, arch: arm32, os: ubuntu-22.04 },
+            { platform: web, arch: wasm32, os: ubuntu-22.04 },
+          ]
+        target-type: [template_debug, template_release]
+    runs-on: ${{ matrix.target.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Build Godot-Jieba
+        uses: ./.github/actions/build-extension
+        with:
+          platform: ${{ matrix.target.platform }}
+          arch: ${{ matrix.target.arch }}
+          target: ${{ matrix.target-type }}
+
+      - name: Stage target library
+        shell: bash
+        run: >-
+          python scripts/package_addon.py stage artifact
+          ${{ matrix.target.platform }} ${{ matrix.target.arch }} ${{ matrix.target-type }}
+
+      - name: Stage dictionary assets
+        if: matrix.target.platform == 'windows' && matrix.target.arch == 'x86_64' && matrix.target-type == 'template_debug'
+        shell: bash
+        run: >-
+          python scripts/package_addon.py stage artifact
+          ${{ matrix.target.platform }} ${{ matrix.target.arch }} ${{ matrix.target-type }}
+          --include-addon-data
+
+      - name: Upload target artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-jieba-${{ matrix.target.platform }}-${{ matrix.target.arch }}-${{ matrix.target-type }}
+          if-no-files-found: error
+          path: artifact/
+
+  package:
+    name: Verify and package addon
+    runs-on: ubuntu-22.04
+    needs: [prepare, build]
+    env:
+      ASSET: ${{ needs.prepare.outputs.asset }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Download target artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: godot-jieba-*
+          merge-multiple: true
+          path: artifact/
+
+      - name: Verify and assemble addon
+        run: python3 scripts/package_addon.py assemble artifact
+
+      - name: Create and verify release archive
+        run: python3 scripts/package_addon.py archive artifact "release/$ASSET"
+
+      - name: Upload release archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-jieba-release
+          if-no-files-found: error
+          path: release/${{ needs.prepare.outputs.asset }}
+
+  release:
+    name: Publish GitHub Release
+    needs: [prepare, package]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified release archive
+        uses: actions/download-artifact@v4
+        with:
+          name: godot-jieba-release
+          path: release/
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          ASSET: ${{ needs.prepare.outputs.asset }}
+        run: |
+          set -euo pipefail
+          args=("$TAG" "release/$ASSET" --repo "$GITHUB_REPOSITORY" --generate-notes)
+          if [ "$EVENT_NAME" = "push" ]; then
+            args+=(--verify-tag)
+          else
+            args+=(--target "$GITHUB_SHA")
+          fi
+          if [[ "$TAG" == *-* ]]; then
+            args+=(--prerelease)
+          fi
+          gh release create "${args[@]}"

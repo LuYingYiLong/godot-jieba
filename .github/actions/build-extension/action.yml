@@ -1,0 +1,34 @@
+name: Build Godot-Jieba
+description: Install the target SDKs and build the Godot-Jieba GDExtension with SCons.
+
+inputs:
+  platform:
+    description: SCons target platform.
+    required: true
+  arch:
+    description: SCons target architecture.
+    required: true
+  target:
+    description: SCons build target.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up godot-cpp build dependencies
+      uses: ./godot-cpp/.github/actions/setup-godot-cpp
+      with:
+        platform: ${{ inputs.platform }}
+        windows-compiler: msvc
+        em-version: 4.0.11
+        scons-version: 4.11.1
+
+    - name: Build GDExtension
+      shell: bash
+      env:
+        BUILD_PLATFORM: ${{ inputs.platform }}
+        BUILD_ARCH: ${{ inputs.arch }}
+        BUILD_TARGET: ${{ inputs.target }}
+      run: |
+        set -euo pipefail
+        scons platform="$BUILD_PLATFORM" arch="$BUILD_ARCH" target="$BUILD_TARGET" precision=single

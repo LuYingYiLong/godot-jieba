@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "Godot-Jieba\\x64\\Debug\\jieba_segment.obj",
+            "outputs": [
+                "Godot-Jieba\\x64\\Debug\\jieba_segment.h.obj.dt.module.json",
+                "Godot-Jieba\\x64\\Debug\\jieba_segment.h.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}

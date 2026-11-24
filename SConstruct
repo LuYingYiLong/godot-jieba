@@ -36,10 +36,11 @@ if env["target"] in ["editor", "template_debug"]:
         print("Not including class reference as we're targeting a pre-4.3 baseline.")
 
 if env["platform"] == "macos":
+    macos_arch_suffix = ".arm64" if env["arch"] == "arm64" else ""
+    framework_name = "libgodot_jieba.{}.{}{}.framework".format(env["platform"], env["target"], macos_arch_suffix)
+    framework_binary = "libgodot_jieba.{}.{}{}".format(env["platform"], env["target"], macos_arch_suffix)
     library = env.SharedLibrary(
-        "addons/godot_jieba/bin/libgodot_jieba.{}.{}.framework/libgodot_jieba.{}.{}".format(
-            env["platform"], env["target"], env["platform"], env["target"]
-        ),
+        "addons/godot_jieba/bin/{}/{}".format(framework_name, framework_binary),
         source=sources,
     )
 elif env["platform"] == "ios":

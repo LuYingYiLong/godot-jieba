@@ -1,0 +1,150 @@
+# Godot-Jieba Simplified Chinese documentation translations.
+# Distributed under the MIT license.
+msgid ""
+msgstr ""
+"Project-Id-Version: Godot-Jieba\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-24 00:00+0800\n"
+"PO-Revision-Date: 2026-11-24 00:00+0800\n"
+"Language: zh_Hans\n"
+"Language-Team: Simplified Chinese\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Chinese word segmentation, part-of-speech tagging, keyword extraction, and user dictionary management powered by CppJieba."
+msgstr "基于 CppJieba 的中文分词、词性标注、关键词提取和用户词典管理。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "[JiebaSegment] wraps CppJieba for use from Godot scripts. Call [method initialize] before using segmentation methods. The default dictionary directory is usually [code]res://addons/godot_jieba/dict[/code]. The extension can load [code].utf8[/code] dictionary files, [code].gbk[/code] dictionary files, and imported [JiebaUTF8] resources."
+msgstr "[JiebaSegment] 封装了 CppJieba，供 Godot 脚本调用。使用分词方法前请先调用 [method initialize]。默认词典目录通常为 [code]res://addons/godot_jieba/dict[/code]。扩展可以加载 [code].utf8[/code]、[code].gbk[/code] 词典文件及导入后的 [JiebaUTF8] 资源。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Adds a user word to the in-memory dictionary. Optionally assigns a part-of-speech tag. Returns [code]true[/code] if the word was inserted."
+msgstr "向内存词典添加词语，并可选设置词性。成功插入时返回 [code]true[/code]。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Adds a user word with an explicit frequency and optional part-of-speech tag. [param freq] must be greater than zero."
+msgstr "向内存词典添加词语，并指定词频和可选的词性。[param freq] 必须大于 0。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Segments [param text] using CppJieba's mixed mode. When [param use_hmm] is [code]true[/code], HMM is used for unknown words."
+msgstr "使用 CppJieba 混合模式对 [param text] 分词。[param use_hmm] 为 [code]true[/code] 时，会使用 HMM 处理未登录词。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Segments [param text] using mixed mode and returns an ordered [Array] of [Dictionary] values. Each dictionary contains [code]word[/code] ([String]), [code]start[/code] ([int]), and [code]end[/code] ([int]). Offsets count Unicode characters in the original text, not UTF-8 bytes. [code]start[/code] is inclusive and [code]end[/code] is exclusive."
+msgstr "使用混合模式对 [param text] 分词，并按原文顺序返回 [Array]。每个 [Dictionary] 包含 [code]word[/code]（[String]）、[code]start[/code]（[int]）和 [code]end[/code]（[int]）。偏移按原文中的 Unicode 字符计数，而不是 UTF-8 字节数。[code]start[/code] 包含在范围内，[code]end[/code] 不包含在范围内。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Segments [param text] in full mode, returning all dictionary words found in the text."
+msgstr "使用全模式对 [param text] 分词，返回文本中匹配到的所有词典词语。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Segments [param text] for search indexing. This mode first uses mixed mode, then further splits longer words into shorter search tokens."
+msgstr "为搜索索引对 [param text] 分词。此模式先使用混合模式，再将较长的词进一步切分为较短的搜索词。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Segments [param text] using only the HMM segmenter."
+msgstr "仅使用 HMM 分词器对 [param text] 分词。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Extracts up to [param top_n] keywords using TF-IDF. Returns an [Array] of [Dictionary] values. Each dictionary contains [code]word[/code] ([String]), [code]weight[/code] ([float]), and [code]offsets[/code] ([PackedInt64Array])."
+msgstr "使用 TF-IDF 提取最多 [param top_n] 个关键词。返回由 [Dictionary] 组成的 [Array]，每个字典包含 [code]word[/code]（[String]）、[code]weight[/code]（[float]）和 [code]offsets[/code]（[PackedInt64Array]）。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Returns whether [param word] exists in the current dictionary trie."
+msgstr "返回当前词典树中是否存在 [param word]。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Returns the normalized dictionary directory used by the current initialized instance. Returns an empty string before successful initialization."
+msgstr "返回当前已初始化实例使用的标准化词典目录。成功初始化前返回空字符串。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Initializes CppJieba from [param dict_path]. If [param dict_path] is empty, common dictionary locations are searched automatically. Returns [code]true[/code] on success. The dictionary directory must provide the base files [code]jieba.dict[/code], [code]hmm_model[/code], [code]user.dict[/code], [code]idf[/code], and [code]stop_words[/code] with either [code].utf8[/code] or [code].gbk[/code] extensions."
+msgstr "从 [param dict_path] 初始化 CppJieba。[param dict_path] 为空时会自动搜索常见词典目录。成功时返回 [code]true[/code]。词典目录必须包含 [code]jieba.dict[/code]、[code]hmm_model[/code]、[code]user.dict[/code]、[code]idf[/code] 和 [code]stop_words[/code] 文件，扩展名可以是 [code].utf8[/code] 或 [code].gbk[/code]。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Returns whether [method initialize] has completed successfully."
+msgstr "返回 [method initialize] 是否已成功完成。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Loads additional user dictionary entries from [param path]. The file can be UTF-8, GBK, or an imported [JiebaUTF8] resource."
+msgstr "从 [param path] 加载额外的用户词典条目。文件可以使用 UTF-8 或 GBK 编码，也可以是导入后的 [JiebaUTF8] 资源。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Returns the part-of-speech tag associated with [param word], or an empty string if no tag is known."
+msgstr "返回 [param word] 对应的词性；如果没有已知词性，则返回空字符串。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Removes a user word from the in-memory dictionary. Optionally matches a specific part-of-speech tag. Returns [code]true[/code] if the word was removed."
+msgstr "从内存词典中移除用户词语，并可选匹配指定词性。成功移除时返回 [code]true[/code]。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Tags [param text] and returns a [Dictionary] mapping words to part-of-speech tags. If the same word appears more than once, later entries overwrite earlier entries. Use [method tag_pairs] when order must be preserved."
+msgstr "为 [param text] 标注词性，并返回词语到词性标签的 [Dictionary] 映射。同一个词多次出现时，后面的条目会覆盖前面的条目。需要保留顺序时请使用 [method tag_pairs]。"
+
+#. doc_classes/JiebaSegment.xml
+msgid "Tags [param text] and returns ordered [code]word/tag[/code] strings."
+msgstr "为 [param text] 标注词性，并按顺序返回 [code]word/tag[/code] 字符串。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Imported UTF-8 dictionary text resource used by Godot-Jieba."
+msgstr "Godot-Jieba 使用的已导入 UTF-8 词典文本资源。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "[JiebaUTF8] stores dictionary text normalized to UTF-8. It is produced by the Godot-Jieba dictionary importer for [code].utf8[/code] and [code].gbk[/code] files. This resource lets exported projects load dictionary text through Godot's resource system instead of relying on raw dictionary files being recognized directly."
+msgstr "[JiebaUTF8] 用于存储已转换为 UTF-8 的词典文本，由 Godot-Jieba 词典导入器根据 [code].utf8[/code] 和 [code].gbk[/code] 文件生成。该资源使导出的项目能够通过 Godot 资源系统加载词典文本，无需依赖引擎直接识别原始词典文件。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Returns the optional original source bytes saved by the importer."
+msgstr "返回导入器保存的可选原始源文件字节。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Returns the source encoding used during import, usually [code]UTF-8[/code] or [code]GBK[/code]."
+msgstr "返回导入时使用的源文件编码，通常为 [code]UTF-8[/code] 或 [code]GBK[/code]。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Returns the original source file path recorded during import."
+msgstr "返回导入时记录的原始源文件路径。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Returns [member utf8_text] encoded as UTF-8 bytes."
+msgstr "返回编码为 UTF-8 字节的 [member utf8_text]。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Returns the dictionary text normalized to UTF-8."
+msgstr "返回已转换为 UTF-8 的词典文本。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Sets the optional original source bytes."
+msgstr "设置可选的原始源文件字节。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Sets the source encoding label."
+msgstr "设置源文件编码标记。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Sets the original source file path."
+msgstr "设置原始源文件路径。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Sets the dictionary text normalized to UTF-8."
+msgstr "设置已转换为 UTF-8 的词典文本。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Optional original source bytes saved by the importer."
+msgstr "导入器保存的可选原始源文件字节。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Source encoding used during import. The importer supports [code]UTF-8[/code] and [code]GBK[/code]."
+msgstr "导入时使用的源文件编码。导入器支持 [code]UTF-8[/code] 和 [code]GBK[/code]。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Original source file path recorded during import."
+msgstr "导入时记录的原始源文件路径。"
+
+#. doc_classes/JiebaUTF8.xml
+msgid "Dictionary text normalized to UTF-8."
+msgstr "已转换为 UTF-8 的词典文本。"

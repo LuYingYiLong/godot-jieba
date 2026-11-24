@@ -5,3 +5,4 @@
 [submodule "src/thirdparty/cppjieba"]
 	path = src/thirdparty/cppjieba
 	url = https://github.com/LuYingYiLong/cppjieba.git
+	ignore = untracked

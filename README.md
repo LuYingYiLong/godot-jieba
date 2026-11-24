@@ -17,6 +17,7 @@ Godot-Jieba 为 Godot 4 提供中文分词、词性标注、关键词提取和�
 ## 功能
 
 - 精确分词：`cut()`
+- 带原文字符范围的分词：`cut_with_offsets()`
 - 全模式分词：`cut_all()`
 - 搜索引擎模式：`cut_for_search()`
 - HMM 分词：`cut_hmm()`
@@ -57,10 +58,16 @@ res://addons/godot_jieba/dict
 
 ```gdscript
 var words: PackedStringArray = jieba.cut("我来到北京清华大学")
+var words_with_offsets: Array = jieba.cut_with_offsets("我来到北京清华大学")
 var search_words: PackedStringArray = jieba.cut_for_search("小明硕士毕业于中国科学院计算所")
 var all_words: PackedStringArray = jieba.cut_all("我来到北京清华大学")
 var hmm_words: PackedStringArray = jieba.cut_hmm("他来到了网易杭研大厦")
+
+for item: Dictionary in words_with_offsets:
+	print(item["word"], item["start"], item["end"])
 ```
+
+`cut_with_offsets()` 按输入文本中的 Unicode 字符返回每个词的 `[start, end)` 范围；`end` 不包含在范围内，偏移不是 UTF-8 字节数。
 
 ### 词性标注
 

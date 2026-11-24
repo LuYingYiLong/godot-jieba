@@ -1,6 +1,7 @@
 #ifndef JIEBA_EDITOR_PLUGIN_H
 #define JIEBA_EDITOR_PLUGIN_H
 
+#include "jieba_editor_translations.h"
 #include "resource_importer_jieba.h"
 
 #include <godot_cpp/classes/editor_plugin.hpp>
@@ -12,6 +13,7 @@ namespace godot {
 		GDCLASS(JiebaEditorPlugin, EditorPlugin)
 
 	private:
+		JiebaEditorTranslations editor_translations;
 		Ref<ResourceImporterJieba> importer;
 		JiebaEditorDock* dock = nullptr;
 

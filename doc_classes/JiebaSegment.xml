@@ -35,6 +35,14 @@
 				Segments [param text] using CppJieba's mixed mode. When [param use_hmm] is [code]true[/code], HMM is used for unknown words.
 			</description>
 		</method>
+		<method name="cut_with_offsets">
+			<return type="Array" />
+			<param index="0" name="text" type="String" />
+			<param index="1" name="use_hmm" type="bool" default="true" />
+			<description>
+				Segments [param text] using mixed mode and returns an ordered [Array] of [Dictionary] values. Each dictionary contains [code]word[/code] ([String]), [code]start[/code] ([int]), and [code]end[/code] ([int]). Offsets count Unicode characters in the original text, not UTF-8 bytes. [code]start[/code] is inclusive and [code]end[/code] is exclusive.
+			</description>
+		</method>
 		<method name="cut_all">
 			<return type="PackedStringArray" />
 			<param index="0" name="text" type="String" />

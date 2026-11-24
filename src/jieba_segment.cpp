@@ -9,113 +9,170 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/file_access.hpp>
 #include <godot_cpp/classes/resource_loader.hpp>
+#include <godot_cpp/classes/dir_access.hpp>
 
+#include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <sstream>
 #include <string>
+#include <vector>
 
 #include "thirdparty/cppjieba/include/cppjieba/Jieba.hpp"
 
 namespace godot {
 	namespace {
-bool assign_utf8_text(String p_text, std::string& r_content) {
-	CharString utf8 = p_text.utf8();
-	r_content.assign(utf8.get_data(), static_cast<size_t>(utf8.length()));
-	return !r_content.empty();
-}
+		bool assign_utf8_text(String p_text, std::string& r_content) {
+			CharString utf8 = p_text.utf8();
+			r_content.assign(utf8.get_data(), static_cast<size_t>(utf8.length()));
+			return !r_content.empty();
+		}
 
-bool assign_source_bytes(const String& p_path, const PackedByteArray& p_data, std::string& r_content) {
-	if (p_path.get_extension().to_lower() == "gbk") {
-		return assign_utf8_text(p_data.get_string_from_multibyte_char("GBK"), r_content);
-	}
+		bool assign_source_bytes(const String& p_path, const PackedByteArray& p_data, std::string& r_content) {
+			if (p_path.get_extension().to_lower() == "gbk") {
+				return assign_utf8_text(p_data.get_string_from_multibyte_char("GBK"), r_content);
+			}
 
-	r_content.clear();
-	r_content.resize(static_cast<size_t>(p_data.size()));
-	if (p_data.size() > 0) {
-		memcpy(&r_content[0], p_data.ptr(), static_cast<size_t>(p_data.size()));
-	}
-	return true;
-}
-
-bool read_file_to_string(const String& p_path, std::string& r_content) {
-	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
-	if (file.is_valid() && file->is_open()) {
-		uint64_t length = file->get_length();
-		if (length == 0) {
+			r_content.clear();
+			r_content.resize(static_cast<size_t>(p_data.size()));
+			if (p_data.size() > 0) {
+				memcpy(&r_content[0], p_data.ptr(), static_cast<size_t>(p_data.size()));
+			}
 			return true;
 		}
 
-		PackedByteArray source_data = file->get_buffer(static_cast<int64_t>(length));
-		if (source_data.size() != static_cast<int64_t>(length)) {
-			ERR_PRINT(String("Jieba: Could not read complete dictionary file: ") + p_path);
-			r_content.clear();
+		bool read_file_to_string(const String& p_path, std::string& r_content) {
+			Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::READ);
+			if (file.is_valid() && file->is_open()) {
+				uint64_t length = file->get_length();
+				if (length == 0) {
+					return true;
+				}
+
+				PackedByteArray source_data = file->get_buffer(static_cast<int64_t>(length));
+				if (source_data.size() != static_cast<int64_t>(length)) {
+					ERR_PRINT(String("Jieba: Could not read complete dictionary file: ") + p_path);
+					r_content.clear();
+					return false;
+				}
+
+				return assign_source_bytes(p_path, source_data, r_content);
+			}
+
+			ResourceLoader* loader = ResourceLoader::get_singleton();
+			if (loader == nullptr) {
+				ERR_PRINT(String("Jieba: Could not open dictionary file: ") + p_path);
+				return false;
+			}
+
+			Ref<Resource> loaded = loader->load(p_path, "JiebaUTF8", ResourceLoader::CACHE_MODE_IGNORE);
+			Ref<JiebaUTF8> imported = loaded;
+			if (imported.is_null()) {
+				ERR_PRINT(String("Jieba: Could not open dictionary file or imported resource: ") + p_path);
+				return false;
+			}
+
+			if (!assign_utf8_text(imported->get_utf8_text(), r_content)) {
+				ERR_PRINT(String("Jieba: Imported dictionary resource is empty: ") + p_path);
+				return false;
+			}
+
+			return true;
+		}
+
+		bool write_string_to_file(const String& p_path, const std::string& p_content) {
+			Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
+			if (file.is_null() || !file->is_open()) {
+				ERR_PRINT(String("Jieba: Could not create temporary dictionary file: ") + p_path);
+				return false;
+			}
+
+			PackedByteArray buffer;
+			buffer.resize(static_cast<int64_t>(p_content.size()));
+			if (!p_content.empty()) {
+				memcpy(buffer.ptrw(), p_content.data(), p_content.size());
+			}
+
+			bool stored = file->store_buffer(buffer);
+			file->close();
+			return stored;
+		}
+
+		String create_temp_directory() {
+			OS* os = OS::get_singleton();
+			if (os == nullptr) {
+				return String();
+			}
+
+			static std::atomic<uint64_t> temp_directory_counter = 0;
+			String temp_directory = os->get_user_data_dir().path_join("godot_jieba").path_join("dict_cache");
+			String unique_name = String::num_int64(os->get_process_id()) + "_" + String::num_int64(static_cast<int64_t>(temp_directory_counter.fetch_add(1, std::memory_order_relaxed)));
+			temp_directory = temp_directory.path_join(unique_name);
+			if (DirAccess::make_dir_recursive_absolute(temp_directory) != OK) {
+				ERR_PRINT(String("Jieba: Could not create temporary dictionary directory: ") + temp_directory);
+				return String();
+			}
+
+			return temp_directory;
+		}
+
+		void remove_temp_directory(const String& p_temp_directory) {
+			if (p_temp_directory.is_empty()) {
+				return;
+			}
+
+			const char* file_names[] = {
+				"jieba.dict.utf8",
+				"hmm_model.utf8",
+				"user.dict.utf8",
+				"idf.utf8",
+				"stop_words.utf8",
+			};
+			for (const char* file_name : file_names) {
+				DirAccess::remove_absolute(p_temp_directory.path_join(file_name));
+			}
+			DirAccess::remove_absolute(p_temp_directory);
+		}
+
+		bool read_existing_dict_to_path(const String& p_path, const String& p_destination_path) {
+			if (!FileAccess::file_exists(p_path)) {
+				ResourceLoader* loader = ResourceLoader::get_singleton();
+				if (loader == nullptr || !loader->exists(p_path, "JiebaUTF8")) {
+					return false;
+				}
+			}
+
+			std::string content;
+			if (!read_file_to_string(p_path, content)) {
+				return false;
+			}
+
+			return write_string_to_file(p_destination_path, content);
+		}
+
+		bool read_dict_to_path(const String& p_dict_dir, const char* p_utf8_file_name, const char* p_gbk_file_name, const String& p_destination_path) {
+			String utf8_path = p_dict_dir.path_join(p_utf8_file_name);
+			if (read_existing_dict_to_path(utf8_path, p_destination_path)) {
+				return true;
+			}
+
+			String gbk_path = p_dict_dir.path_join(p_gbk_file_name);
+			if (read_existing_dict_to_path(gbk_path, p_destination_path)) {
+				return true;
+			}
+
+			ERR_PRINT(String("Jieba: Could not find dictionary file: ") + utf8_path + " or " + gbk_path);
 			return false;
 		}
 
-		return assign_source_bytes(p_path, source_data, r_content);
-	}
+		bool dict_source_exists(const String& p_path) {
+			if (FileAccess::file_exists(p_path)) {
+				return true;
+			}
 
-	ResourceLoader* loader = ResourceLoader::get_singleton();
-	if (loader == nullptr) {
-		ERR_PRINT(String("Jieba: Could not open dictionary file: ") + p_path);
-		return false;
-	}
-
-	Ref<Resource> loaded = loader->load(p_path, "JiebaUTF8", ResourceLoader::CACHE_MODE_IGNORE);
-	Ref<JiebaUTF8> imported = loaded;
-	if (imported.is_null()) {
-		ERR_PRINT(String("Jieba: Could not open dictionary file or imported resource: ") + p_path);
-		return false;
-	}
-
-	if (!assign_utf8_text(imported->get_utf8_text(), r_content)) {
-		ERR_PRINT(String("Jieba: Imported dictionary resource is empty: ") + p_path);
-		return false;
-	}
-
-	return true;
-}
-
-bool read_existing_dict_memory_data(const String& p_path, cppjieba::MemoryData& r_data) {
-	if (!FileAccess::file_exists(p_path)) {
-		ResourceLoader* loader = ResourceLoader::get_singleton();
-		if (loader == nullptr || !loader->exists(p_path, "JiebaUTF8")) {
-			return false;
+			ResourceLoader* loader = ResourceLoader::get_singleton();
+			return loader != nullptr && loader->exists(p_path, "JiebaUTF8");
 		}
-	}
-
-	std::string content;
-	if (!read_file_to_string(p_path, content)) {
-		return false;
-	}
-
-	r_data = cppjieba::MemoryData(content, p_path.utf8().get_data());
-	return true;
-}
-
-bool read_dict_memory_data(const String& p_dict_dir, const char* p_utf8_file_name, const char* p_gbk_file_name, cppjieba::MemoryData& r_data) {
-	String utf8_path = p_dict_dir.path_join(p_utf8_file_name);
-	if (read_existing_dict_memory_data(utf8_path, r_data)) {
-		return true;
-	}
-
-	String gbk_path = p_dict_dir.path_join(p_gbk_file_name);
-	if (read_existing_dict_memory_data(gbk_path, r_data)) {
-		return true;
-	}
-
-	ERR_PRINT(String("Jieba: Could not find dictionary file: ") + utf8_path + " or " + gbk_path);
-	return false;
-}
-
-bool dict_source_exists(const String& p_path) {
-	if (FileAccess::file_exists(p_path)) {
-		return true;
-	}
-
-	ResourceLoader* loader = ResourceLoader::get_singleton();
-	return loader != nullptr && loader->exists(p_path, "JiebaUTF8");
-}
 
 	} // namespace
 
@@ -125,6 +182,7 @@ bool dict_source_exists(const String& p_path) {
 		ClassDB::bind_method(D_METHOD("get_dict_path"), &JiebaSegment::get_dict_path);
 
 		ClassDB::bind_method(D_METHOD("cut", "text", "use_hmm"), &JiebaSegment::cut, DEFVAL(true));
+		ClassDB::bind_method(D_METHOD("cut_with_offsets", "text", "use_hmm"), &JiebaSegment::cut_with_offsets, DEFVAL(true));
 		ClassDB::bind_method(D_METHOD("cut_all", "text"), &JiebaSegment::cut_all);
 		ClassDB::bind_method(D_METHOD("cut_for_search", "text", "use_hmm"), &JiebaSegment::cut_for_search, DEFVAL(true));
 		ClassDB::bind_method(D_METHOD("cut_hmm", "text"), &JiebaSegment::cut_hmm);
@@ -179,12 +237,12 @@ bool dict_source_exists(const String& p_path) {
 				}
 			}
 
-		for (const String& path : try_paths) {
-			// 检查字典文件是否存在
-			bool file_exists = dict_source_exists(path.path_join("jieba.dict.utf8")) || dict_source_exists(path.path_join("jieba.dict.gbk"));
-			
-			if (file_exists) {
-				dict_path = path;
+			for (const String& path : try_paths) {
+				// 检查字典文件是否存在
+				bool file_exists = dict_source_exists(path.path_join("jieba.dict.utf8")) || dict_source_exists(path.path_join("jieba.dict.gbk"));
+
+				if (file_exists) {
+					dict_path = path;
 					break;
 				}
 			}
@@ -203,27 +261,46 @@ bool dict_source_exists(const String& p_path) {
 			dict_dir_path = dict_dir_path.substr(0, dict_dir_path.length() - 1);
 		}
 
-	try {
-		cppjieba::JiebaMemoryData memory_data;
-		if (!read_dict_memory_data(dict_dir_path, "jieba.dict.utf8", "jieba.dict.gbk", memory_data.dict) ||
-				!read_dict_memory_data(dict_dir_path, "hmm_model.utf8", "hmm_model.gbk", memory_data.hmm_model) ||
-				!read_dict_memory_data(dict_dir_path, "user.dict.utf8", "user.dict.gbk", memory_data.user_dict) ||
-				!read_dict_memory_data(dict_dir_path, "idf.utf8", "idf.gbk", memory_data.idf) ||
-				!read_dict_memory_data(dict_dir_path, "stop_words.utf8", "stop_words.gbk", memory_data.stop_words)) {
-			return false;
-		}
+		String temp_directory;
+		try {
+			temp_directory = create_temp_directory();
+			if (temp_directory.is_empty()) {
+				return false;
+			}
 
-			jieba = new cppjieba::Jieba(memory_data);
+			String dict_file_path = temp_directory.path_join("jieba.dict.utf8");
+			String hmm_model_file_path = temp_directory.path_join("hmm_model.utf8");
+			String user_dict_file_path = temp_directory.path_join("user.dict.utf8");
+			String idf_file_path = temp_directory.path_join("idf.utf8");
+			String stop_words_file_path = temp_directory.path_join("stop_words.utf8");
+			if (!read_dict_to_path(dict_dir_path, "jieba.dict.utf8", "jieba.dict.gbk", dict_file_path) ||
+				!read_dict_to_path(dict_dir_path, "hmm_model.utf8", "hmm_model.gbk", hmm_model_file_path) ||
+				!read_dict_to_path(dict_dir_path, "user.dict.utf8", "user.dict.gbk", user_dict_file_path) ||
+				!read_dict_to_path(dict_dir_path, "idf.utf8", "idf.gbk", idf_file_path) ||
+				!read_dict_to_path(dict_dir_path, "stop_words.utf8", "stop_words.gbk", stop_words_file_path)) {
+				remove_temp_directory(temp_directory);
+				return false;
+			}
+
+			jieba = new cppjieba::Jieba(
+				dict_file_path.utf8().get_data(),
+				hmm_model_file_path.utf8().get_data(),
+				user_dict_file_path.utf8().get_data(),
+				idf_file_path.utf8().get_data(),
+				stop_words_file_path.utf8().get_data());
+			remove_temp_directory(temp_directory);
 
 			initialized = true;
 			return true;
 
 		}
 		catch (const std::exception& e) {
+			remove_temp_directory(temp_directory);
 			ERR_PRINT(String("Jieba initialization failed: ") + e.what());
 			return false;
 		}
 		catch (...) {
+			remove_temp_directory(temp_directory);
 			ERR_PRINT("Jieba initialization failed: unknown error");
 			return false;
 		}
@@ -258,6 +335,36 @@ bool dict_source_exists(const String& p_path) {
 		}
 		catch (const std::exception& e) {
 			ERR_PRINT(String("Jieba cut failed: ") + e.what());
+		}
+
+		return result;
+	}
+
+	Array JiebaSegment::cut_with_offsets(const String& p_text, bool p_use_hmm) {
+		Array result;
+		ERR_FAIL_COND_V_MSG(!initialized || jieba == nullptr, result, "Jieba not initialized. Call initialize() first.");
+
+		if (p_text.is_empty()) {
+			return result;
+		}
+
+		try {
+			std::string text = p_text.utf8().get_data();
+			std::vector<cppjieba::Word> words;
+
+			jieba->Cut(text, words, p_use_hmm);
+
+			for (const cppjieba::Word& word : words) {
+				Dictionary item;
+				int64_t start = static_cast<int64_t>(word.unicode_offset);
+				item["word"] = String::utf8(word.word.c_str());
+				item["start"] = start;
+				item["end"] = start + static_cast<int64_t>(word.unicode_length);
+				result.append(item);
+			}
+		}
+		catch (const std::exception& e) {
+			ERR_PRINT(String("Jieba cut_with_offsets failed: ") + e.what());
 		}
 
 		return result;
@@ -549,7 +656,18 @@ bool dict_source_exists(const String& p_path) {
 				return;
 			}
 
-			jieba->LoadUserDict(cppjieba::MemoryData(content, p_path.utf8().get_data()));
+			std::istringstream input(content);
+			std::vector<std::string> lines;
+			std::string line;
+			while (std::getline(input, line)) {
+				if (!line.empty() && line.back() == '\r') {
+					line.pop_back();
+				}
+				if (!line.empty()) {
+					lines.push_back(line);
+				}
+			}
+			jieba->LoadUserDict(lines);
 		}
 		catch (const std::exception& e) {
 			ERR_PRINT(String("Jieba load_user_dict failed: ") + e.what());

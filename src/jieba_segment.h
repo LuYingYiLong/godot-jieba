@@ -29,6 +29,7 @@ namespace godot {
 		String get_dict_path() const;
 
 		PackedStringArray cut(const String& p_text, bool p_use_hmm = true);
+		Array cut_with_offsets(const String& p_text, bool p_use_hmm = true);
 		PackedStringArray cut_all(const String& p_text);
 		PackedStringArray cut_for_search(const String& p_text, bool p_use_hmm = true);
 		PackedStringArray cut_hmm(const String& p_text);

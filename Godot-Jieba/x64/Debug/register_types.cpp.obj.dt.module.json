@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "Godot-Jieba\\x64\\Debug\\register_types.obj",
+            "outputs": [
+                "Godot-Jieba\\x64\\Debug\\register_types.cpp.obj.dt.module.json",
+                "Godot-Jieba\\x64\\Debug\\register_types.cpp.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}
