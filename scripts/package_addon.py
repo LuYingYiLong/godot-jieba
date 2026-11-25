@@ -19,9 +19,9 @@ DICTIONARY_FILES = (
     "stop_words.utf8",
 )
 THIRD_PARTY_LICENSES = (
-    ("godot-cpp/LICENSE.md", "THIRD-PARTY-LICENSES/godot-cpp-LICENSE.md"),
-    ("src/thirdparty/cppjieba/LICENSE", "THIRD-PARTY-LICENSES/cppjieba-LICENSE"),
-    ("src/thirdparty/cppjieba/deps/limonp/LICENSE", "THIRD-PARTY-LICENSES/limonp-LICENSE"),
+    "godot-cpp-LICENSE.md",
+    "cppjieba-LICENSE",
+    "limonp-LICENSE",
 )
 
 
@@ -98,13 +98,13 @@ def assemble(destination):
 
     for filename in DICTIONARY_FILES:
         require_file(addon_destination / "dict" / filename)
+    for filename in THIRD_PARTY_LICENSES:
+        require_file(addon_destination / "THIRD-PARTY-LICENSES" / filename)
     for path in (addon_destination / "translations/properties.zh_Hans.po", addon_destination / "translations/documentation.zh_Hans.po"):
         require_file(path)
 
     copy_file(ROOT / "README.md", destination / "README.md")
     copy_file(ROOT / "LICENSE.txt", destination / "LICENSE.txt")
-    for source_name, destination_name in THIRD_PARTY_LICENSES:
-        copy_file(ROOT / source_name, destination / destination_name)
 
     print(f"Verified {len(read_libraries())} GDExtension libraries and addon data in {destination}")
 
