@@ -102,9 +102,6 @@ def assemble(destination):
     for path in (addon_destination / "translations/properties.zh_Hans.po", addon_destination / "translations/documentation.zh_Hans.po"):
         require_file(path)
 
-    copy_file(ROOT / "README.md", destination / "README.md")
-    copy_file(ROOT / "LICENSE.txt", destination / "LICENSE.txt")
-
     print(f"Verified {len(read_libraries())} GDExtension libraries and addon data in {destination}")
 
 
