@@ -19,9 +19,8 @@ DICTIONARY_FILES = (
     "stop_words.utf8",
 )
 THIRD_PARTY_LICENSES = (
-    "godot-cpp-LICENSE.md",
-    "cppjieba-LICENSE",
-    "limonp-LICENSE",
+    "cppjieba-LICENSE.txt",
+    "limonp-LICENSE.txt",
 )
 
 

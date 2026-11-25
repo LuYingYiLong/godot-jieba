@@ -673,5 +673,4 @@ namespace godot {
 			ERR_PRINT(String("Jieba load_user_dict failed: ") + e.what());
 		}
 	}
-
 } // namespace godot
