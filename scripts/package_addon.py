@@ -18,12 +18,6 @@ DICTIONARY_FILES = (
     "idf.utf8",
     "stop_words.utf8",
 )
-THIRD_PARTY_LICENSES = (
-    "cppjieba-LICENSE.txt",
-    "limonp-LICENSE.txt",
-)
-
-
 def read_libraries():
     config = ConfigParser(interpolation=None)
     config.read_string(EXTENSION.read_text(encoding="utf-8"))
@@ -88,7 +82,7 @@ def assemble(destination):
         ADDON,
         addon_destination,
         dirs_exist_ok=True,
-        ignore=ignore_patterns("bin", "dict", "*.import", ".godot"),
+        ignore=ignore_patterns("bin", "dict", "THIRD-PARTY-LICENSES", "*.import", ".godot"),
     )
     copy_file(EXTENSION, addon_destination / "bin/godot_jieba.gdextension")
 
@@ -97,8 +91,6 @@ def assemble(destination):
 
     for filename in DICTIONARY_FILES:
         require_file(addon_destination / "dict" / filename)
-    for filename in THIRD_PARTY_LICENSES:
-        require_file(addon_destination / "THIRD-PARTY-LICENSES" / filename)
     for path in (addon_destination / "translations/properties.zh_Hans.po", addon_destination / "translations/documentation.zh_Hans.po"):
         require_file(path)
 
